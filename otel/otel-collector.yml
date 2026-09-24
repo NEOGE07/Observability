@@ -1,0 +1,55 @@
+receivers:
+
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+
+      http:
+        endpoint: 0.0.0.0:4318
+
+
+processors:
+  transform:
+    log_statements:
+      - context: log
+        statements:
+          - set(attributes["environment"], "production")
+
+  batch:
+
+
+exporters:
+
+  elasticsearch:
+    endpoints:
+      - http://elasticsearch:9200
+
+
+service:
+
+  pipelines:
+
+    traces:
+      receivers:
+        - otlp
+      processors:
+        - batch
+      exporters:
+        - elasticsearch
+
+    metrics:
+      receivers:
+        - otlp
+      processors:
+        - batch
+      exporters:
+        - elasticsearch
+
+    logs:
+      receivers:
+        - otlp
+      processors:
+        - batch
+      exporters:
+        - elasticsearch
