@@ -16,7 +16,7 @@ app = Flask(__name__)
 provider = TracerProvider()
 
 exporter = OTLPSpanExporter(
-    endpoint="http://otel-collector:4318/v1/traces"
+    endpoint="http://otel-agent:4318/v1/traces"
 )
 
 provider.add_span_processor(

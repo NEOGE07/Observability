@@ -43,14 +43,27 @@ services:
     networks:
       - observability
 
+
+  otel-agent:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: otel-agent
+    command: ["--config=/etc/otelcol-contrib/otel-agent-collector.yml"]
+    volumes:
+      - ./otel/otel-agent-collector.yml:/etc/otelcol-contrib/otel-agent-collector.yml:ro
+    depends_on:
+      - otel-collector
+    networks:
+      - observability
+
+
   test-app:
     build:
       context: ./app
     container_name: test-app
     depends_on:
-      - otel-collector
+      - otel-agent
     environment:
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-agent:4318
       - OTEL_SERVICE_NAME=test-app
     ports:
       - "8080:8080"
