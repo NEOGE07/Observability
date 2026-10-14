@@ -36,13 +36,13 @@ services:
       - "--config=/etc/otelcol-contrib/otel-collector.yml"
     volumes:
       - ./otel/otel-collector.yml:/etc/otelcol-contrib/otel-collector.yml
+      - ./collector-output:/collector-output
     ports:
       - "4317:4317"
       - "4318:4318"
       - "8888:8888"
     networks:
       - observability
-
 
   otel-agent:
     image: otel/opentelemetry-collector-contrib:latest
