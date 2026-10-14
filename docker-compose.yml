@@ -50,6 +50,8 @@ services:
     command: ["--config=/etc/otelcol-contrib/otel-agent-collector.yml"]
     volumes:
       - ./otel/otel-agent-collector.yml:/etc/otelcol-contrib/otel-agent-collector.yml:ro
+      - ./collector-output:/collector-output
+
     depends_on:
       - otel-collector
     networks:
@@ -70,7 +72,7 @@ services:
     networks:
       - observability
 
-volumes:
+volumes:  
   elasticsearch-data:
 
 networks:

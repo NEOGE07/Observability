@@ -1,3 +1,4 @@
+
 receivers:
   otlp:
     protocols:
@@ -7,6 +8,14 @@ receivers:
         endpoint: 0.0.0.0:4318
 
 processors:
+  transform/add-attribute:
+    error_mode: ignore
+    trace_statements:
+      - context: span
+        statements:
+          - set(attributes["test.processed"], true)
+          - set(attributes["test.environment"], "lab")
+          - set(attributes["test.source"], "otel-agent")
   batch:
 
 exporters:
@@ -14,23 +23,40 @@ exporters:
     endpoint: otel-collector:4317
     tls:
       insecure: true
-      
-  debug:
+
+  debug/before:
     verbosity: detailed
+  debug/after:
+    verbosity: detailed
+
+  
+  file/before:
+    path: /collector-output/traces-before.json
+  file/after:
+    path: /collector-output/traces-after.json
+
 
 service:
   pipelines:
-    traces:
+    # BEFORE transformation
+    traces/before_transform:
       receivers: [otlp]
       processors: [batch]
-      exporters: [otlp/backend, debug]
+      exporters: [debug/before, file/before]
+
+    # AFTER transformation
+    traces/after_transform:
+      receivers: [otlp]
+      processors: [transform/add-attribute, batch]
+      exporters: [debug/after, file/after, otlp/backend]
 
     metrics:
       receivers: [otlp]
       processors: [batch]
-      exporters: [otlp/backend, debug]
+      exporters: [debug/after, otlp/backend]
 
     logs:
       receivers: [otlp]
       processors: [batch]
-      exporters: [otlp/backend, debug]
+      exporters: [debug/after, otlp/backend]
+
