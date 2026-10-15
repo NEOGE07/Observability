@@ -11,8 +11,7 @@ from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExport
 
 app = Flask(__name__)
 
-
-# OpenTelemetry
+# OpenTelemetry setup
 provider = TracerProvider()
 
 exporter = OTLPSpanExporter(
@@ -35,6 +34,33 @@ def home():
 
 @app.route("/test")
 def test():
+    # Get the current Flask request span
+    span = trace.get_current_span()
+
+    # Add custom attributes for transformation testing
+    span.set_attribute(
+        "custom.message",
+        "before_transformation"
+    )
+    span.set_attribute(
+        "custom.test_id",
+        "trace-transform-test-001"
+    )
+    span.set_attribute(
+        "custom.transformation_status",
+        "not_transformed"
+    )
+
+    # Add a timestamped event to the span
+    span.add_event(
+        "Custom trace message",
+        attributes={
+            "message": "Testing OTel Collector transformation",
+            "stage": "before_transformation"
+        }
+    )
+
+    # Simulate request processing time
     time.sleep(random.uniform(0.1, 1.0))
 
     return {
