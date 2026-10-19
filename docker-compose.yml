@@ -27,15 +27,15 @@ services:
     networks:
       - observability
 
-  otel-collector:
+  otel-backend:
     image: otel/opentelemetry-collector-contrib:latest
-    container_name: otel-collector
+    container_name: otel-backend
     depends_on:
       - elasticsearch
     command:
-      - "--config=/etc/otelcol-contrib/otel-collector.yml"
+      - "--config=/etc/otelcol-contrib/otel-backend.yml"
     volumes:
-      - ./otel/otel-collector.yml:/etc/otelcol-contrib/otel-collector.yml
+      - ./otel/otel-backend.yml:/etc/otelcol-contrib/otel-backend.yml:ro
       - ./collector-output:/collector-output
     ports:
       - "4317:4317"
@@ -53,7 +53,7 @@ services:
       - ./collector-output:/collector-output
 
     depends_on:
-      - otel-collector
+      - otel-backend
     networks:
       - observability
 
@@ -78,3 +78,4 @@ volumes:
 networks:
   observability:
     driver: bridge
+

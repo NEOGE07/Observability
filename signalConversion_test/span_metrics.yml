@@ -1,0 +1,102 @@
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+
+  transform/add-attribute:
+    error_mode: ignore
+    trace_statements:
+      - context: span
+        statements:
+          - set(attributes["test.processed"], true)
+          - set(attributes["test.environment"], "lab")
+          - set(attributes["test.source"], "otel-agent")
+
+connectors:
+  span_metrics/after:
+    namespace: traces.span.metrics
+    metrics_flush_interval: 5s
+    histogram:
+      unit: ms
+      explicit:
+        buckets: [5, 10, 25, 50, 100, 250, 500, 1000]
+
+exporters:
+  debug/before:
+    verbosity: detailed
+
+  debug/after:
+    verbosity: detailed
+
+  debug/metrics:
+    verbosity: detailed
+
+  debug/metrics-after:
+    verbosity: detailed
+
+  debug/logs:
+    verbosity: detailed
+
+  file/before:
+    path: /collector-output/traces-before.json
+    format: json
+    append: true
+    create_directory: true
+
+  file/after:
+    path: /collector-output/traces-after.json
+    format: json
+    append: true
+    create_directory: true
+
+  otlp/backend:
+    endpoint: otel-backend:4317
+    tls:
+      insecure: true
+
+service:
+  pipelines:
+    traces/before_transform:
+      receivers: [otlp]
+      processors: [batch]
+      exporters:
+        - debug/before
+        - file/before
+
+    traces/after_transform:
+      receivers: [otlp]
+      processors: [transform/add-attribute, batch]
+      exporters:
+        - debug/after
+        - file/after
+        - span_metrics/after
+        - otlp/backend
+
+    metrics/after_transform:
+      receivers: [span_metrics/after]
+      processors: [batch]
+      exporters:
+        - debug/metrics-after
+        - otlp/backend
+
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters:
+        - debug/metrics
+        - otlp/backend
+
+    logs:
+      receivers: [otlp]
+      processors: [batch]
+      exporters:
+        - debug/logs
+        - otlp/backend
+
