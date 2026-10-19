@@ -6,7 +6,7 @@ STATUS: `docker compose ps`
 
 # Challenges Faced
 
-- ubuntu vm network failure (3 times from wk 1 - 3). Issue: ....
+- ubuntu vm network failure (3 times from wk 1 - 3). Issue: sometimes need to restart NAT service on windows. 
 
 - need to rebuild images of containers if files are changes
 - poor visibility throughout the pipeline. cumbersome to check output at different stages of the pipeline. E.g. set of commands for 1st collector, another set for 2nd collector. Not easy to tell which stage of the pipeline is not working properly... need to check logs step by step
