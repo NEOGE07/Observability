@@ -11,7 +11,9 @@ from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExport
 
 app = Flask(__name__)
 
+# ------------------------------------------------------------
 # OpenTelemetry setup
+# ------------------------------------------------------------
 
 provider = TracerProvider()
 
@@ -28,6 +30,10 @@ trace.set_tracer_provider(provider)
 FlaskInstrumentor().instrument_app(app)
 
 
+# ------------------------------------------------------------
+# Routes
+# ------------------------------------------------------------
+
 @app.route("/")
 def home():
     return "Hello from test app!"
@@ -38,18 +44,36 @@ def test():
     # Get the current Flask request span
     span = trace.get_current_span()
 
-    # Add custom attributes for transformation testing
+    # --------------------------------------------------------
+    # Existing attributes for trace transformation testing
+    # --------------------------------------------------------
+
     span.set_attribute(
         "custom.message",
         "before_transformation"
     )
+
     span.set_attribute(
         "custom.test_id",
         "trace-transform-test-001"
     )
+
     span.set_attribute(
         "custom.transformation_status",
         "not_transformed"
+    )
+
+    # --------------------------------------------------------
+    # Numeric attribute for signal_to_metrics conversion
+    # --------------------------------------------------------
+
+    # Simulate a numeric measurement for this request.
+    # The Collector will extract this value into a metric.
+    work_units = random.randint(10, 100)
+
+    span.set_attribute(
+        "app.work_units",
+        float(work_units)
     )
 
     # Add a timestamped event to the span
@@ -66,7 +90,8 @@ def test():
 
     return {
         "message": "test request",
-        "status": "ok"
+        "status": "ok",
+        "work_units": work_units
     }
 
 
@@ -75,8 +100,13 @@ def error():
     raise Exception("Test error")
 
 
+# ------------------------------------------------------------
+# Start Flask
+# ------------------------------------------------------------
+
 if __name__ == "__main__":
     app.run(
         host="0.0.0.0",
         port=8080
     )
+

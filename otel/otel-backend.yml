@@ -1,3 +1,4 @@
+
 receivers:
   otlp:
     protocols:
@@ -22,11 +23,15 @@ exporters:
   elasticsearch:
     endpoints:
       - http://elasticsearch:9200
+    metrics_index: metrics-generic.otel-default
 
   debug/before:
     verbosity: detailed
 
   debug/after:
+    verbosity: detailed
+
+  debug/metrics:
     verbosity: detailed
 
   file/before:
@@ -51,12 +56,15 @@ service:
       processors: [transform/add-attribute, batch]
       exporters: [debug/after, file/after, elasticsearch]
 
+    # Receive converted metrics from otel-agent
     metrics:
       receivers: [otlp]
       processors: [batch]
-      exporters: [elasticsearch]
+      exporters: [debug/metrics, elasticsearch]
 
+    # Receive logs
     logs:
       receivers: [otlp]
       processors: [batch]
       exporters: [elasticsearch]
+

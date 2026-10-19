@@ -19,64 +19,84 @@ processors:
           - set(attributes["test.environment"], "lab")
           - set(attributes["test.source"], "otel-agent")
 
+  transform/metrics-add-attribute:
+    error_mode: ignore
+    metric_statements:
+      - context: datapoint
+        statements:
+          - set(attributes["test.metric_source"], "otel-agent")
+
+
+connectors:
+  signal_to_metrics:
+    spans:
+      - name: app.work_units
+        description: Numeric work units extracted from Flask spans
+        conditions:
+          - span.attributes["app.work_units"] != nil
+        gauge:
+          value: Double(span.attributes["app.work_units"])
+
+
 exporters:
+  otlp/backend:
+    endpoint: otel-backend:4317
+    tls:
+      insecure: true
+
   debug/before:
     verbosity: detailed
 
   debug/after:
     verbosity: detailed
 
-  debug/metrics:
+  debug/metrics-before:
     verbosity: detailed
 
-  debug/logs:
+  debug/metrics-after:
     verbosity: detailed
 
   file/before:
     path: /collector-output/traces-before.json
-    format: json
-    append: true
-    create_directory: true
 
   file/after:
     path: /collector-output/traces-after.json
-    format: json
-    append: true
-    create_directory: true
 
-  otlp/backend:
-    endpoint: otel-backend:4317
-    tls:
-      insecure: true
+  file/metrics-before:
+    path: /collector-output/metrics-before.json
+
+  file/metrics-after:
+    path: /collector-output/metrics-after.json
 
 service:
   pipelines:
-    traces/before_transform:
+    # Original traces before the agent transformation
+    traces/before:
       receivers: [otlp]
       processors: [batch]
-      exporters:
-        - debug/before
-        - file/before
+      exporters: [debug/before, file/before]
 
-    traces/after_transform:
+    # Transformed traces continue to the backend and converter
+    traces/after:
       receivers: [otlp]
       processors: [transform/add-attribute, batch]
       exporters:
         - debug/after
         - file/after
+        - signal_to_metrics
         - otlp/backend
 
-    metrics:
-      receivers: [otlp]
-      processors: [batch]
-      exporters:
-        - debug/metrics
-        - otlp/backend
+    # Metrics before the metric-specific transformation
+    metrics/before:
+      receivers: [signal_to_metrics]
+      exporters: [debug/metrics-before, file/metrics-before]
 
-    logs:
-      receivers: [otlp]
-      processors: [batch]
+    # Metrics after the metric-specific transformation
+    metrics/after:
+      receivers: [signal_to_metrics]
+      processors: [transform/metrics-add-attribute, batch]
       exporters:
-        - debug/logs
+        - debug/metrics-after
+        - file/metrics-after
         - otlp/backend
 
